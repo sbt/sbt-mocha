@@ -89,6 +89,12 @@ function MyReporter(runner) {
     });
 
     runner.on("end", function() {
+        if (currentSuite == null) {
+            currentSuite = {
+                suites: [],
+                tests: []
+            }
+        }
         console.log("\u0010", JSON.stringify(currentSuite));
         process.exit(0);
     });

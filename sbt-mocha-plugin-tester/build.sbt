@@ -2,9 +2,7 @@ import com.typesafe.sbt.jse.SbtJsTaskPlugin._
 
 webSettings
 
-jsEngineSettings
-
-jsTaskSettings
+jsEngineAndTaskSettings
 
 mochaSettings
 

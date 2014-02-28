@@ -9,12 +9,11 @@ import sbt.testing._
  */
 private [mocha] class MochaTestReporting(mochaWorkDir: String, listeners: Seq[TestReportListener]) {
 
-  def sanitiseFilename(name: String) = {
+  private def sanitiseFilename(name: String) = {
     name.stripPrefix(mochaWorkDir)
   }
 
-
-  def overallResultFromSuiteResults(suiteResults: Iterable[SuiteResult]) = {
+  private def overallResultFromSuiteResults(suiteResults: Iterable[SuiteResult]) = {
     import sbt.TestResult._
     suiteResults.foldLeft(Passed) { (a, b) =>
       (a, b.result) match {
