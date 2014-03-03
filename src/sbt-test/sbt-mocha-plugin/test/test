@@ -1,0 +1,59 @@
+> reset-logs
+
+# A happy test
+> mocha-only HappyAssetSpec
+> logged info "a test asset"
+> logged info "+ should be happy"
+> logged info "+ should be able to require a main asset"
+> logged info "Passed: Total 2, Failed 0, Errors 0, Passed 2"
+> logged debug "Passed tests:"
+> logged debug "HappyAssetSpec.js"
+> no-errors
+
+> reset-logs
+
+# A happy resource
+> mocha-only HappyPublicSpec
+> logged info "a test resource"
+> logged info "+ should be happy"
+> logged info "+ should be able to require a main resource"
+> logged info "Passed: Total 2, Failed 0, Errors 0, Passed 2"
+> no-errors
+
+> reset-logs
+
+# A test that depends on requires being required
+> mocha-only SetupSpec
+> logged info "setup"
+> logged info "+ should have been required"
+> logged info "Passed: Total 1, Failed 0, Errors 0, Passed 1"
+> no-errors
+
+> reset-logs
+
+# A failing test
+-> mocha-only FailingSpec
+> logged info "a spec"
+> logged info "x should be able to fail with an assertion error"
+# The following log message varies slightly between node and rhino
+# > logged error "AssertionError: true == false: Got value true but expected a value == false"
+> logged error "Failed: Total 1, Failed 1, Errors 0, Passed 0"
+> logged error "Failed tests:"
+> logged error "FailingSpec.js"
+
+> reset-logs
+
+# An error test
+-> mocha-only ErrorSpec
+> logged info "a spec"
+> logged info "! should be able to fail with a generic error"
+> logged error "Error: not happy"
+> logged error "Error: Total 1, Failed 0, Errors 1, Passed 0"
+> logged error "Error during tests:"
+> logged error "ErrorSpec.js"
+
+> reset-logs
+
+# Run all tests
+-> test
+> logged error "Error: Total 7, Failed 1, Errors 1, Passed 5"

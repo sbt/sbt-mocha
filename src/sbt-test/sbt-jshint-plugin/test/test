@@ -1,3 +1,0 @@
-# Lint an valid js file and see that linting errors are reported.
--> compile
-> check

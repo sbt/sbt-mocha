@@ -5,4 +5,4 @@ resolvers ++= Seq(
     "Typesafe Snapshots Repository" at "http://repo.typesafe.com/typesafe/snapshots/"
     )
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-jshint-plugin" % sys.props("project.version"))
+addSbtPlugin("com.typesafe.sbt" % "sbt-mocha-plugin" % sys.props("project.version"))

@@ -24,10 +24,31 @@ private [mocha] class MochaTestReporting(mochaWorkDir: String, listeners: Seq[Te
     }
   }
 
+  private def mergeSuiteResults(a: SuiteResult, b: SuiteResult) = {
+    import TestResult._
+    val overallResult = (a.result, b.result) match {
+      case (Error, _) | (_, Error) => Error
+      case (Failed, _) | (_, Failed) => Failed
+      case _ => Passed
+    }
+    new SuiteResult(overallResult,
+      a.passedCount + b.passedCount,
+      a.failureCount + b.failureCount,
+      a.errorCount + b.errorCount,
+      a.skippedCount + b.skippedCount,
+      a.ignoredCount + b.ignoredCount,
+      a.canceledCount + b.canceledCount,
+      a.pendingCount + b.pendingCount
+    )
+  }
+
   def logTestResults(results: JsValue): (TestResult.Value, Map[String, SuiteResult]) = {
     import MochaJsonProtocol._
 
     val suite = results.convertTo[MochaSuite]
+
+    // The mocha suite is a recursive structure, each suite may have many sub suites
+    // Each suite may define a filename, we will call any suite that defines a filename a top level suite
 
     // First, find all the top level suites (ie, suites that define a filename)
     def splitTopLevel(suite: MochaSuite): (Seq[MochaSuite], Option[MochaSuite]) = {
@@ -53,15 +74,20 @@ private [mocha] class MochaTestReporting(mochaWorkDir: String, listeners: Seq[Te
       filename -> handleSuite(suite, filename, 0)
     }
 
-    val allSuiteResults = orphans.filter(_.suites.isEmpty).map { orphan =>
+    val allSuiteResults = orphans.filterNot(_.suites.isEmpty).map { orphan =>
       suiteResults :+ ("mocha tests" -> handleSuite(orphan, "mocha tests", 0))
-    }.getOrElse(suiteResults).toMap
+    }.getOrElse(suiteResults)
+
+    // Merge all suite results into a map
+    val suiteResultsMap = allSuiteResults.groupBy(_._1).map {
+      case (name, rs) => name -> rs.map(_._2).reduce(mergeSuiteResults)
+    }.toMap
 
     val testsListeners = listeners collect { case tl: TestsListener => tl }
     testsListeners.foreach(_.doInit())
-    val overallResult = overallResultFromSuiteResults(allSuiteResults.values)
+    val overallResult = overallResultFromSuiteResults(suiteResultsMap.values)
     testsListeners.foreach(_.doComplete(overallResult))
-    (overallResult, allSuiteResults)
+    (overallResult, suiteResultsMap)
   }
 
   /**
@@ -233,7 +259,6 @@ private [mocha] class MochaTestReporting(mochaWorkDir: String, listeners: Seq[Te
   }
 
   object MochaFingerprint extends Fingerprint
-
 
   case class MochaSuite(filename: Option[String], title: Option[String], suites: Seq[MochaSuite], tests: Seq[MochaTest])
   case class MochaTest(title: String, status: String, duration: Option[Long], error: Option[MochaError])

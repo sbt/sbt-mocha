@@ -3,14 +3,13 @@ package com.typesafe.sbt.mocha
 import sbt._
 import sbt.Keys._
 import com.typesafe.sbt.web.SbtWebPlugin._
-import com.typesafe.sbt.web.incremental._
-import sbt.File
-import scala.Some
 import com.typesafe.sbt.jse.SbtJsTaskPlugin
-import com.typesafe.sbt.web.SbtWebPlugin
+import com.typesafe.sbt.web.PathMapping
 import spray.json._
-import sbt.testing.Status
 import com.typesafe.sbt.jse.SbtJsEnginePlugin.JsEngineKeys
+import sbinary.{Output, Input, Format, DefaultProtocol}
+import sbinary.Operations._
+import scala.Tuple2
 
 /**
  * The sbt plugin plumbing around mocha.
@@ -22,6 +21,9 @@ object SbtMochaPlugin extends SbtJsTaskPlugin {
     import KeyRanks._
 
     val mocha = TaskKey[(TestResult.Value, Map[String, SuiteResult])]("mocha", "Run mocha tests", BTask)
+    val mochaOnly = InputKey[Unit]("mocha-only", "Executes the mocha tests provided as arguments or all tests if no arguments are provided.", ATask)
+
+    val mochaTests = TaskKey[Seq[PathMapping]]("mocha-tests", "The tests that will be executed by mocha.", BTask)
 
     val mochaRequires = SettingKey[Seq[String]]("mocha-requires", "Any scripts that should be required before running the tests", ASetting)
     val mochaGlobals = SettingKey[Seq[String]]("mocha-globals", "Global variables that should be shared between tests", ASetting)
@@ -54,6 +56,12 @@ object SbtMochaPlugin extends SbtJsTaskPlugin {
 
     shellFile in mocha := "com/typesafe/sbt/mocha/mocha.js",
 
+    mochaTests := {
+      val workDir: File = (assets in TestAssets).value
+      val testFilter: FileFilter = (jsFilter in TestAssets).value
+      (workDir ** testFilter).pair(relativeTo(workDir))
+    },
+
     mocha := {
       val workDir: File = (assets in TestAssets).value
 
@@ -63,24 +71,13 @@ object SbtMochaPlugin extends SbtJsTaskPlugin {
         (nodeModules in TestAssets).value.getCanonicalPath
       )
 
-      val options: MochaOptions = mochaOptions.value
+      val options = mochaOptionsToJson(mochaOptions.value, workDir)
 
-      val jsOptions = JsObject(Map(
-        "requires" -> JsArray(options.requires.map { r =>
-          JsString(new File(workDir, r).getCanonicalPath)
-        }.toList),
-        "globals" -> JsArray(options.globals.map(JsString.apply).toList),
-        "checkLeaks" -> JsBoolean(options.checkLeaks),
-        "bail" -> JsBoolean(options.bail)
-      )).toString()
-
-      // Now find just the test classes
-      val testFilter: FileFilter = (jsFilter in TestAssets).value
-      val tests = (workDir ** testFilter).get.map(_.getCanonicalPath)
+      val tests = mochaTests.value.map(_._1.getCanonicalPath)
 
       import scala.concurrent.duration._
       val results = executeJs(state.value, JsEngineKeys.engineType.value, modules, (shellSource in mocha).value,
-        Seq(jsOptions, JsArray(tests.map(JsString.apply).toList).toString()), 100.days)
+        Seq(options, JsArray(tests.map(JsString.apply).toList).toString()), 100.days)
 
       val listeners = (testListeners in mocha).value
 
@@ -102,7 +99,57 @@ object SbtMochaPlugin extends SbtJsTaskPlugin {
       }
       Tests.Output(overallResult, output.events ++ suiteResults, output.summaries)
     },
-    tags in mocha := Seq(Tags.Test -> 1)
+
+    tags in mocha := Seq(Tags.Test -> 1),
+
+    mochaOnly := {
+
+      val selected = Def.spaceDelimited("<tests>").parsed.toSet
+
+      val availableTests: Seq[PathMapping] = mochaTests.value
+
+      val tests = if (selected.isEmpty) {
+        availableTests.map(_._1.getCanonicalPath)
+      } else {
+        availableTests.collect {
+          case (file, n) if selected(n) || selected(n.replaceAll("\\.js$", "")) =>
+            file.getCanonicalPath
+        }
+      }
+
+      val workDir: File = (assets in TestAssets).value
+
+      val modules = Seq(
+        (nodeModules in Plugin).value.getCanonicalPath,
+        (nodeModules in Assets).value.getCanonicalPath,
+        (nodeModules in TestAssets).value.getCanonicalPath
+      )
+
+      val options = mochaOptionsToJson(mochaOptions.value, workDir)
+
+      import scala.concurrent.duration._
+      val results = executeJs(state.value, JsEngineKeys.engineType.value, modules, (shellSource in mocha).value,
+        Seq(options, JsArray(tests.map(JsString.apply).toList).toString()), 100.days)
+
+      val listeners = (testListeners in mocha).value
+
+      val out = results.headOption.map { jsResults =>
+        val (result, events) = new MochaTestReporting(workDir.getCanonicalPath + "/", listeners).logTestResults(jsResults)
+        Tests.Output(result, events, Nil)
+      }.getOrElse(Tests.Output(TestResult.Failed, Map.empty, Nil))
+
+      Tests.showResults(streams.value.log, out, "No mocha tests found")
+    }
   ) ++ Defaults.testTaskOptions(mocha)
 
+  private def mochaOptionsToJson(options: MochaOptions, workDir: File): String = {
+    JsObject(Map(
+      "requires" -> JsArray(options.requires.map { r =>
+        JsString(new File(workDir, r).getCanonicalPath)
+      }.toList),
+      "globals" -> JsArray(options.globals.map(JsString.apply).toList),
+      "checkLeaks" -> JsBoolean(options.checkLeaks),
+      "bail" -> JsBoolean(options.bail)
+    )).toString()
+  }
 }

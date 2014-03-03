@@ -17,7 +17,7 @@ resolvers ++= Seq(
     )
 
 libraryDependencies ++= Seq(
-  "org.webjars" % "mocha" % "1.17.1-SNAPSHOT",
+  "org.webjars" % "mocha" % "1.17.1",
   "org.specs2" %% "specs2" % "2.2.2" % "test"
 )
 
