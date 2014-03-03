@@ -7,9 +7,6 @@ import com.typesafe.sbt.jse.SbtJsTaskPlugin
 import com.typesafe.sbt.web.PathMapping
 import spray.json._
 import com.typesafe.sbt.jse.SbtJsEnginePlugin.JsEngineKeys
-import sbinary.{Output, Input, Format, DefaultProtocol}
-import sbinary.Operations._
-import scala.Tuple2
 
 /**
  * The sbt plugin plumbing around mocha.
@@ -25,10 +22,10 @@ object SbtMochaPlugin extends SbtJsTaskPlugin {
 
     val mochaTests = TaskKey[Seq[PathMapping]]("mocha-tests", "The tests that will be executed by mocha.", BTask)
 
-    val mochaRequires = SettingKey[Seq[String]]("mocha-requires", "Any scripts that should be required before running the tests", ASetting)
-    val mochaGlobals = SettingKey[Seq[String]]("mocha-globals", "Global variables that should be shared between tests", ASetting)
-    val mochaCheckLeaks = SettingKey[Boolean]("mocha-check-leaks", "Check for global variable leaks, defaults to false.", ASetting)
-    val mochaBail = SettingKey[Boolean]("mocha-bail", "Bail after the first failure.  Defaults to false.", ASetting)
+    val requires = SettingKey[Seq[String]]("mocha-requires", "Any scripts that should be required before running the tests", ASetting)
+    val globals = SettingKey[Seq[String]]("mocha-globals", "Global variables that should be shared between tests", ASetting)
+    val checkLeaks = SettingKey[Boolean]("mocha-check-leaks", "Check for global variable leaks, defaults to false.", ASetting)
+    val bail = SettingKey[Boolean]("mocha-bail", "Bail after the first failure.  Defaults to false.", ASetting)
 
     val mochaOptions = TaskKey[MochaOptions]("mocha-options", "The mocha options.", CSetting)
   }
@@ -45,13 +42,13 @@ object SbtMochaPlugin extends SbtJsTaskPlugin {
   import MochaKeys._
 
   def mochaSettings = inTask(mocha)(jsTaskSpecificUnscopedSettings) ++ Seq(
-    mochaRequires := Nil,
-    mochaGlobals := Nil,
-    mochaCheckLeaks := false,
-    mochaBail := false,
+    requires := Nil,
+    globals := Nil,
+    checkLeaks := false,
+    bail := false,
 
     mochaOptions := {
-      MochaOptions(mochaRequires.value, mochaGlobals.value, mochaCheckLeaks.value, mochaBail.value)
+      MochaOptions(requires.value, globals.value, checkLeaks.value, bail.value)
     },
 
     shellFile in mocha := "com/typesafe/sbt/mocha/mocha.js",

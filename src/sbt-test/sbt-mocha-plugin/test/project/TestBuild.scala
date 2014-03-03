@@ -51,7 +51,7 @@ object TestBuild extends Build {
 
     // SbtJsEnginePlugin.JsEngineKeys.engineType := SbtJsEnginePlugin.JsEngineKeys.EngineType.Node,
 
-    MochaKeys.mochaRequires += "Setup",
+    MochaKeys.requires += "Setup",
 
     Keys.extraLoggers := { scope =>
       // Configure extra loggers just for the mocha and test tasks
