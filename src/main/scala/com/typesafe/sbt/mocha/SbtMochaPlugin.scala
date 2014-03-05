@@ -17,10 +17,11 @@ object SbtMochaPlugin extends SbtJsTaskPlugin {
 
     import KeyRanks._
 
-    val mocha = TaskKey[(TestResult.Value, Map[String, SuiteResult])]("mocha", "Run mocha tests", BTask)
-    val mochaOnly = InputKey[Unit]("mocha-only", "Executes the mocha tests provided as arguments or all tests if no arguments are provided.", ATask)
+    val mocha = TaskKey[Unit]("mocha", "Run all mocha tests.", BTask)
+    val mochaOnly = InputKey[Unit]("mocha-only", "Execute the mocha tests provided as arguments or all tests if no arguments are provided.", ATask)
 
-    val mochaTests = TaskKey[Seq[PathMapping]]("mocha-tests", "The tests that will be executed by mocha.", BTask)
+    val mochaExecuteTests = TaskKey[(TestResult.Value, Map[String, SuiteResult])]("mocha-execute-tests", "Execute all mocha tests and return the result.", CTask)
+    val mochaTests = TaskKey[Seq[PathMapping]]("mocha-tests", "The tests that will be executed by mocha.", CTask)
 
     val requires = SettingKey[Seq[String]]("mocha-requires", "Any scripts that should be required before running the tests", ASetting)
     val globals = SettingKey[Seq[String]]("mocha-globals", "Global variables that should be shared between tests", ASetting)
@@ -53,38 +54,23 @@ object SbtMochaPlugin extends SbtJsTaskPlugin {
 
     shellFile in mocha := "com/typesafe/sbt/mocha/mocha.js",
 
+    // Find the test files to run.  These need to be in the test assets target directory, however we only want to
+    // find tests that originally came from the test sources directories (both managed and unmanaged).
     mochaTests := {
       val workDir: File = (assets in TestAssets).value
       val testFilter: FileFilter = (jsFilter in TestAssets).value
-      (workDir ** testFilter).pair(relativeTo(workDir))
+      val testSources: Seq[File] = (sources in TestAssets).value
+      val testDirectories: Seq[File] = (sourceDirectories in TestAssets).value
+      (testSources ** testFilter).pair(relativeTo(testDirectories)).map {
+        case (_, path) => workDir / path -> path
+      }
     },
 
-    mocha := {
-      val workDir: File = (assets in TestAssets).value
+    // Actually run the tests
+    mochaExecuteTests := mochaTestTask.value(mochaTests.value.map(_._1)),
 
-      val modules = Seq(
-        (nodeModules in Plugin).value.getCanonicalPath,
-        (nodeModules in Assets).value.getCanonicalPath,
-        (nodeModules in TestAssets).value.getCanonicalPath
-      )
-
-      val options = mochaOptionsToJson(mochaOptions.value, workDir)
-
-      val tests = mochaTests.value.map(_._1.getCanonicalPath)
-
-      import scala.concurrent.duration._
-      val results = executeJs(state.value, JsEngineKeys.engineType.value, modules, (shellSource in mocha).value,
-        Seq(options, JsArray(tests.map(JsString.apply).toList).toString()), 100.days)
-
-      val listeners = (testListeners in mocha).value
-
-      results.headOption.map { jsResults =>
-        new MochaTestReporting(workDir.getCanonicalPath + "/", listeners).logTestResults(jsResults)
-      }.getOrElse((TestResult.Failed, Map.empty))
-    },
-
-    // Add the mocha task to execute tests
-    (executeTests in Test) <<= (executeTests in Test, mocha).map { (output, mochaResult) =>
+    // This ensures that mocha tests get executed when test is run
+    (executeTests in Test) <<= (executeTests in Test, mochaExecuteTests).map { (output, mochaResult) =>
       val (result, suiteResults) = mochaResult
       import TestResult._
 
@@ -97,56 +83,82 @@ object SbtMochaPlugin extends SbtJsTaskPlugin {
       Tests.Output(overallResult, output.events ++ suiteResults, output.summaries)
     },
 
+    // For running mocha tests in isolation from other types of tests
+    mocha := {
+      val (result, events) = mochaExecuteTests.value
+      Tests.showResults(streams.value.log, Tests.Output(result, events, Nil), "No mocha tests found")
+    },
+
     tags in mocha := Seq(Tags.Test -> 1),
-
+  
+    // For running only a specified set of tests
     mochaOnly := {
-
+      // Parse the tests
       val selected = Def.spaceDelimited("<tests>").parsed.toSet
-
       val availableTests: Seq[PathMapping] = mochaTests.value
 
+      // Select the correct tests to run
       val tests = if (selected.isEmpty) {
-        availableTests.map(_._1.getCanonicalPath)
+        availableTests.map(_._1)
       } else {
         availableTests.collect {
           case (file, n) if selected(n) || selected(n.replaceAll("\\.js$", "")) =>
-            file.getCanonicalPath
+            file
         }
       }
 
-      val workDir: File = (assets in TestAssets).value
-
-      val modules = Seq(
-        (nodeModules in Plugin).value.getCanonicalPath,
-        (nodeModules in Assets).value.getCanonicalPath,
-        (nodeModules in TestAssets).value.getCanonicalPath
-      )
-
-      val options = mochaOptionsToJson(mochaOptions.value, workDir)
-
-      import scala.concurrent.duration._
-      val results = executeJs(state.value, JsEngineKeys.engineType.value, modules, (shellSource in mocha).value,
-        Seq(options, JsArray(tests.map(JsString.apply).toList).toString()), 100.days)
-
-      val listeners = (testListeners in mocha).value
-
-      val out = results.headOption.map { jsResults =>
-        val (result, events) = new MochaTestReporting(workDir.getCanonicalPath + "/", listeners).logTestResults(jsResults)
-        Tests.Output(result, events, Nil)
-      }.getOrElse(Tests.Output(TestResult.Failed, Map.empty, Nil))
-
-      Tests.showResults(streams.value.log, out, "No mocha tests found")
+      // Run them
+      val (result, events) = mochaTestTask.value(tests)
+      Tests.showResults(streams.value.log, Tests.Output(result, events, Nil), "No mocha tests found")
     }
   ) ++ Defaults.testTaskOptions(mocha)
 
-  private def mochaOptionsToJson(options: MochaOptions, workDir: File): String = {
-    JsObject(Map(
-      "requires" -> JsArray(options.requires.map { r =>
-        JsString(new File(workDir, r).getCanonicalPath)
-      }.toList),
-      "globals" -> JsArray(options.globals.map(JsString.apply).toList),
-      "checkLeaks" -> JsBoolean(options.checkLeaks),
-      "bail" -> JsBoolean(options.bail)
-    )).toString()
+  /**
+   * This is a task that produces a function that will take the test files to run, and then run it.
+   * 
+   * The purpose for this is to allow easily factoring out all the common code from mocha and mocha-only, while still
+   * taking advantage of the SBT macros.  Since the tests to be run can't be determined in a task in the case of
+   * mocha-only, since they come from the command line input of that particular run, a function is the most convenient
+   * way to do this.
+   */
+  private val mochaTestTask: Def.Initialize[Task[Seq[File] => (TestResult.Value, Map[String, SuiteResult])]] = Def.task {
+    { (tests: Seq[File]) =>
+
+      println("Running " + tests)
+
+      val workDir: File = (assets in TestAssets).value
+
+      // One way of declaring dependencies
+      (nodeModules in Plugin).value
+      (nodeModules in Assets).value
+      (nodeModules in TestAssets).value
+
+      val modules = (
+        (nodeModuleDirectories in Plugin).value ++
+          (nodeModuleDirectories in Assets).value ++
+          (nodeModuleDirectories in TestAssets).value
+        ).map(_.getCanonicalPath)
+
+      val options = mochaOptions.value
+    
+      val jsOptions = JsObject(Map(
+        "requires" -> JsArray(options.requires.map { r =>
+          JsString(new File(workDir, r).getCanonicalPath)
+        }.toList),
+        "globals" -> JsArray(options.globals.map(JsString.apply).toList),
+        "checkLeaks" -> JsBoolean(options.checkLeaks),
+        "bail" -> JsBoolean(options.bail)
+      )).toString()
+
+      import scala.concurrent.duration._
+      val results = executeJs(state.value, (JsEngineKeys.engineType in mocha).value, modules, (shellSource in mocha).value,
+        Seq(jsOptions, JsArray(tests.map(t => JsString.apply(t.getCanonicalPath)).toList).toString()), 100.days)
+
+      val listeners = (testListeners in mocha).value
+
+      results.headOption.map { jsResults =>
+        new MochaTestReporting(workDir.getCanonicalPath + "/", listeners).logTestResults(jsResults)
+      }.getOrElse((TestResult.Failed, Map.empty))
+    }
   }
 }

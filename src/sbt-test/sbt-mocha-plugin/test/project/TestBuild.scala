@@ -51,12 +51,19 @@ object TestBuild extends Build {
 
     // SbtJsEnginePlugin.JsEngineKeys.engineType := SbtJsEnginePlugin.JsEngineKeys.EngineType.Node,
 
+    Keys.libraryDependencies += "org.specs2" %% "specs2" % "2.3.8" % "test",
+
     MochaKeys.requires += "Setup",
 
     Keys.extraLoggers := { scope =>
       // Configure extra loggers just for the mocha and test tasks
       if (scope.scope.task.fold({ tsk =>
-        tsk == MochaKeys.mochaOnly.key || tsk == MochaKeys.mocha.key || tsk == Keys.test.key
+        Seq(
+          MochaKeys.mochaOnly.key,
+          MochaKeys.mocha.key,
+          MochaKeys.mochaExecuteTests,
+          Keys.test.key
+        ).contains(tsk)
       }, false, false)) {
         Seq(TestLogger)
       } else {

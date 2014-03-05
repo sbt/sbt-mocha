@@ -27,6 +27,8 @@ scriptedSettings
 
 scriptedLaunchOpts <+= version apply { v => s"-Dproject.version=$v" }
 
+scriptedLaunchOpts += "-XX:MaxPermSize=256m"
+
 publishMavenStyle := false
 
 publishTo := {
