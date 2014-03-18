@@ -59,8 +59,8 @@ object SbtMochaPlugin extends SbtJsTaskPlugin {
     mochaTests := {
       val workDir: File = (assets in TestAssets).value
       val testFilter: FileFilter = (jsFilter in TestAssets).value
-      val testSources: Seq[File] = (sources in TestAssets).value
-      val testDirectories: Seq[File] = (sourceDirectories in TestAssets).value
+      val testSources: Seq[File] = (sources in TestAssets).value ++ (managedResources in TestAssets).value
+      val testDirectories: Seq[File] = (sourceDirectories in TestAssets).value ++ (managedResourceDirectories in TestAssets).value
       (testSources ** testFilter).pair(relativeTo(testDirectories)).map {
         case (_, path) => workDir / path -> path
       }
@@ -123,8 +123,6 @@ object SbtMochaPlugin extends SbtJsTaskPlugin {
    */
   private val mochaTestTask: Def.Initialize[Task[Seq[File] => (TestResult.Value, Map[String, SuiteResult])]] = Def.task {
     { (tests: Seq[File]) =>
-
-      println("Running " + tests)
 
       val workDir: File = (assets in TestAssets).value
 
