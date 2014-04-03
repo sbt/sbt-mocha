@@ -1,5 +1,7 @@
-sbt-mocha-plugin
-=================
+sbt-mocha
+=========
+
+[![Build Status](https://api.travis-ci.org/sbt/sbt-jshint.png?branch=master)](https://travis-ci.org/sbt/sbt-jshint)
 
 Allows mocha to be used from within sbt.
 
@@ -12,23 +14,16 @@ To use this plugin use the addSbtPlugin command within your project's plugins.sb
         "Spray Releases" at "http://repo.spray.io/"
         )
 
-    addSbtPlugin("com.typesafe.sbt" % "sbt-jshint-plugin" % "1.0.0-SNAPSHOT")
+    addSbtPlugin("com.typesafe.sbt" % "sbt-mocha" % "1.0.0-SNAPSHOT")
 
-Then declare the settings required in your build file (mocha depends on some other, more generalised settings
-to be defined). For example, for build.sbt:
+Then declare the settings required in your build file:
 
-    import com.typesafe.sbt.jse.SbtJsTaskPlugin._
-
-    webSettings
-
-    jsEngineAndTaskSettings
-
-    mochaSettings
+    lazy val root = (project in file(".")).addPlugins(SbtWeb)
 
 By default, any tests matching either `*Test.js` or `*Spec.js` are tested.  This can be overridden by defining a different includes, for example:
 
 ```scala
-jsFilter in TestAssets := GlobFilter("Test*.js")
+WebKeys.jsFilter in TestAssets := GlobFilter("Test*.js")
 ```
 
 Tests are read from `src/test/assets` and `src/test/public`.  For example, you can create `src/test/assets/FooSpec`:

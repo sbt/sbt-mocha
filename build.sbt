@@ -2,7 +2,7 @@ sbtPlugin := true
 
 organization := "com.typesafe.sbt"
 
-name := "sbt-mocha-plugin"
+name := "sbt-mocha"
 
 version := "1.0.0-SNAPSHOT"
 

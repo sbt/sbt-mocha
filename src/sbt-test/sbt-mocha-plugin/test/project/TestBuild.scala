@@ -1,11 +1,10 @@
+import com.typesafe.sbt.mocha.SbtMocha
+import com.typesafe.sbt.web.SbtWeb
 import sbt._
-
-import com.typesafe.sbt.web.SbtWebPlugin
-import com.typesafe.sbt.jse.{SbtJsEnginePlugin, SbtJsTaskPlugin}
-import com.typesafe.sbt.mocha.SbtMochaPlugin._
 
 object TestBuild extends Build {
 
+  import SbtMocha.autoImport._
 
   object TestLogger extends AbstractLogger {
 
@@ -41,13 +40,7 @@ object TestBuild extends Build {
   lazy val root = Project(
     id = "test-build",
     base = file(".")
-  ).settings(
-    SbtWebPlugin.webSettings: _*
-  ).settings(
-    SbtJsTaskPlugin.jsEngineAndTaskSettings:_*
-  ).settings(
-    mochaSettings: _*
-  ).settings(
+  ).addPlugins(SbtWeb).settings(
 
     // SbtJsEnginePlugin.JsEngineKeys.engineType := SbtJsEnginePlugin.JsEngineKeys.EngineType.Node,
 
