@@ -2,19 +2,12 @@ package com.typesafe.sbt.mocha
 
 import sbt._
 import sbt.Keys._
-import com.typesafe.sbt.web.SbtWebPlugin._
-import com.typesafe.sbt.jse.SbtJsTaskPlugin
-import com.typesafe.sbt.web.PathMapping
+import com.typesafe.sbt.web.{SbtWeb, PathMapping}
 import spray.json._
-import com.typesafe.sbt.jse.SbtJsEnginePlugin.JsEngineKeys
+import com.typesafe.sbt.jse.{SbtJsEngine, SbtJsTask}
 
-/**
- * The sbt plugin plumbing around mocha.
- */
-object SbtMochaPlugin extends SbtJsTaskPlugin {
-
+object Import {
   object MochaKeys {
-
     import KeyRanks._
 
     val mocha = TaskKey[Unit]("mocha", "Run all mocha tests.", BTask)
@@ -29,27 +22,42 @@ object SbtMochaPlugin extends SbtJsTaskPlugin {
     val bail = SettingKey[Boolean]("mocha-bail", "Bail after the first failure.  Defaults to false.", ASetting)
 
     val mochaOptions = TaskKey[MochaOptions]("mocha-options", "The mocha options.", CSetting)
+
+    case class MochaOptions(
+                             requires: Seq[String],
+                             globals: Seq[String],
+                             checkLeaks: Boolean,
+                             bail: Boolean
+                             )
   }
+}
 
-  case class MochaOptions(
-    requires: Seq[String],
-    globals: Seq[String],
-    checkLeaks: Boolean,
-    bail: Boolean
-  )
+/**
+ * The sbt plugin plumbing around mocha.
+ */
+object SbtMocha extends AutoPlugin {
 
+  override def requires = SbtJsTask
+
+  override def trigger = AllRequirements
+
+  val autoImport = Import
+
+  import SbtWeb.autoImport._
   import WebKeys._
-  import SbtJsTaskPlugin.JsTaskKeys._
+  import SbtJsEngine.autoImport.JsEngineKeys._
+  import SbtJsTask.autoImport.JsTaskKeys._
+  import autoImport._
   import MochaKeys._
 
-  def mochaSettings = inTask(mocha)(jsTaskSpecificUnscopedSettings) ++ Seq(
-    requires := Nil,
+  override def projectSettings = inTask(mocha)(SbtJsTask.jsTaskSpecificUnscopedSettings) ++ Seq(
+    MochaKeys.requires := Nil,
     globals := Nil,
     checkLeaks := false,
     bail := false,
 
     mochaOptions := {
-      MochaOptions(requires.value, globals.value, checkLeaks.value, bail.value)
+      MochaOptions(MochaKeys.requires.value, globals.value, checkLeaks.value, bail.value)
     },
 
     shellFile in mocha := "com/typesafe/sbt/mocha/mocha.js",
@@ -149,7 +157,7 @@ object SbtMochaPlugin extends SbtJsTaskPlugin {
       )).toString()
 
       import scala.concurrent.duration._
-      val results = executeJs(state.value, (JsEngineKeys.engineType in mocha).value, modules, (shellSource in mocha).value,
+      val results = SbtJsTask.executeJs(state.value, (engineType in mocha).value, modules, (shellSource in mocha).value,
         Seq(jsOptions, JsArray(tests.map(t => JsString.apply(t.getCanonicalPath)).toList).toString()), 100.days)
 
       val listeners = (testListeners in mocha).value
