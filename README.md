@@ -1,7 +1,7 @@
 sbt-mocha
 =========
 
-[![Build Status](https://api.travis-ci.org/sbt/sbt-jshint.png?branch=master)](https://travis-ci.org/sbt/sbt-jshint)
+[![Build Status](https://api.travis-ci.org/sbt/sbt-mocha.png?branch=master)](https://travis-ci.org/sbt/sbt-mocha)
 
 Allows mocha to be used from within sbt.
 
