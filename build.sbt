@@ -4,7 +4,7 @@ organization := "com.typesafe.sbt"
 
 name := "sbt-mocha"
 
-version := "1.0.0-SNAPSHOT"
+version := "1.0.0-M2a"
 
 scalaVersion := "2.10.3"
 
@@ -21,7 +21,7 @@ libraryDependencies ++= Seq(
   "org.specs2" %% "specs2" % "2.2.2" % "test"
 )
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-js-engine" % "1.0.0-M2")
+addSbtPlugin("com.typesafe.sbt" % "sbt-js-engine" % "1.0.0-M2a")
 
 scriptedSettings
 
