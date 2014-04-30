@@ -60,7 +60,7 @@ object SbtMocha extends AutoPlugin {
       MochaOptions(MochaKeys.requires.value, globals.value, checkLeaks.value, bail.value)
     },
 
-    shellFile in mocha := "com/typesafe/sbt/mocha/mocha.js",
+    shellFile in mocha := getClass.getResource("mocha.js"),
 
     // Find the test files to run.  These need to be in the test assets target directory, however we only want to
     // find tests that originally came from the test sources directories (both managed and unmanaged).
@@ -157,7 +157,7 @@ object SbtMocha extends AutoPlugin {
       )).toString()
 
       import scala.concurrent.duration._
-      val results = SbtJsTask.executeJs(state.value, (engineType in mocha).value, modules, (shellSource in mocha).value,
+      val results = SbtJsTask.executeJs(state.value, (engineType in mocha).value, (command in mocha).value, modules, (shellSource in mocha).value,
         Seq(jsOptions, JsArray(tests.map(t => JsString.apply(t.getCanonicalPath)).toList).toString()), 100.days)
 
       val listeners = (testListeners in mocha).value
