@@ -50,6 +50,8 @@ object SbtMocha extends AutoPlugin {
   import autoImport._
   import MochaKeys._
 
+  val testResultLogger = TestResultLogger.Default.copy(printNoTests = TestResultLogger.const(_ info "No mocha tests found"))
+
   override def projectSettings = inTask(mocha)(SbtJsTask.jsTaskSpecificUnscopedSettings) ++ Seq(
     MochaKeys.requires := Nil,
     globals := Nil,
@@ -94,7 +96,7 @@ object SbtMocha extends AutoPlugin {
     // For running mocha tests in isolation from other types of tests
     mocha := {
       val (result, events) = mochaExecuteTests.value
-      Tests.showResults(streams.value.log, Tests.Output(result, events, Nil), "No mocha tests found")
+      testResultLogger.run(streams.value.log, Tests.Output(result, events, Nil), "")
     },
 
     tags in mocha := Seq(Tags.Test -> 1),
@@ -117,7 +119,7 @@ object SbtMocha extends AutoPlugin {
 
       // Run them
       val (result, events) = mochaTestTask.value(tests)
-      Tests.showResults(streams.value.log, Tests.Output(result, events, Nil), "No mocha tests found")
+      testResultLogger.run(streams.value.log, Tests.Output(result, events, Nil), "")
     }
   ) ++ Defaults.testTaskOptions(mocha)
 
@@ -163,7 +165,7 @@ object SbtMocha extends AutoPlugin {
       val listeners = (testListeners in mocha).value
 
       results.headOption.map { jsResults =>
-        new MochaTestReporting(workDir.getCanonicalPath + "/", listeners).logTestResults(jsResults)
+        new MochaTestReporting(workDir, listeners).logTestResults(jsResults)
       }.getOrElse((TestResult.Failed, Map.empty))
     }
   }

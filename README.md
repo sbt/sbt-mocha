@@ -11,7 +11,7 @@ To use this plugin use the addSbtPlugin command within your project's plugins.sb
 
 Then declare the settings required in your build file:
 
-    lazy val root = (project in file(".")).addPlugins(SbtWeb)
+    lazy val root = (project in file(".")).enablePlugins(SbtWeb)
 
 By default, any tests matching either `*Test.js` or `*Spec.js` are tested.  This can be overridden by defining a different includes, for example:
 

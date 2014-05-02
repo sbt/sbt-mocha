@@ -40,11 +40,11 @@ object TestBuild extends Build {
   lazy val root = Project(
     id = "test-build",
     base = file(".")
-  ).addPlugins(SbtWeb).settings(
+  ).enablePlugins(SbtWeb).settings(
 
     // SbtJsEnginePlugin.JsEngineKeys.engineType := SbtJsEnginePlugin.JsEngineKeys.EngineType.Node,
 
-    Keys.libraryDependencies += "org.specs2" %% "specs2" % "2.3.8" % "test",
+    Keys.libraryDependencies += "org.specs2" %% "specs2" % "2.3.11" % "test",
 
     MochaKeys.requires += "Setup",
 

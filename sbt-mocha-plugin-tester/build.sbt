@@ -1,4 +1,4 @@
-lazy val root = (project in file(".")).addPlugins(SbtWeb)
+lazy val root = (project in file(".")).enablePlugins(SbtWeb)
 
 libraryDependencies ++= Seq(
   "org.webjars" % "rjs" % "2.1.11-1-trireme" % "test",

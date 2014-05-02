@@ -7,10 +7,15 @@ import sbt.testing._
 /**
  * Handles reporting test results
  */
-private [mocha] class MochaTestReporting(mochaWorkDir: String, listeners: Seq[TestReportListener]) {
+private [mocha] class MochaTestReporting(mochaWorkDir: File, listeners: Seq[TestReportListener]) {
+
+  val testsListeners = listeners collect { case tl: TestsListener => tl }
+  testsListeners.foreach(_.doInit())
+
+  val mochaWorkPath = mochaWorkDir.getCanonicalPath
 
   private def sanitiseFilename(name: String) = {
-    name.stripPrefix(mochaWorkDir)
+    name.stripPrefix(mochaWorkPath).drop(1)
   }
 
   private def overallResultFromSuiteResults(suiteResults: Iterable[SuiteResult]) = {
@@ -74,17 +79,14 @@ private [mocha] class MochaTestReporting(mochaWorkDir: String, listeners: Seq[Te
       filename -> handleSuite(suite, filename, 0)
     }
 
-    val allSuiteResults = orphans.filterNot(_.suites.isEmpty).map { orphan =>
-      suiteResults :+ ("mocha tests" -> handleSuite(orphan, "mocha tests", 0))
-    }.getOrElse(suiteResults)
+    val allSuiteResults = orphans.filterNot(_.suites.isEmpty).fold(suiteResults)(orphan =>
+      suiteResults :+ ("mocha tests" -> handleSuite(orphan, "mocha tests", 0)))
 
     // Merge all suite results into a map
     val suiteResultsMap = allSuiteResults.groupBy(_._1).map {
       case (name, rs) => name -> rs.map(_._2).reduce(mergeSuiteResults)
     }.toMap
 
-    val testsListeners = listeners collect { case tl: TestsListener => tl }
-    testsListeners.foreach(_.doInit())
     val overallResult = overallResultFromSuiteResults(suiteResultsMap.values)
     testsListeners.foreach(_.doComplete(overallResult))
     (overallResult, suiteResultsMap)
@@ -100,12 +102,21 @@ private [mocha] class MochaTestReporting(mochaWorkDir: String, listeners: Seq[Te
    */
   def handleSuite(suite: MochaSuite, filename: String, indent: Int): SuiteResult = {
 
+    // The crazy thing here is that the JUnitXmlTestsListener interprets the name of the
+    // group as a filename. Thus we have a function here to make a sensible filename that
+    // can be passed into startGroup and endGroup. Issue reported here:
+    // https://github.com/sbt/sbt/issues/1306
+    val suiteFileTitle = (for {
+      filename <- suite.filename
+      title <- suite.title
+    } yield (sanitiseFilename(filename) + "-" + title).replaceAll("\\W+", "")).getOrElse("unknown")
+
     val suiteTitle = suite.title.filterNot(_.isEmpty)
 
     // Log/fire events for start of suite
     suiteTitle.foreach { title =>
       listeners.foreach { listener =>
-        listener.startGroup(title)
+        listener.startGroup(suiteFileTitle)
         listener.contentLogger(
           new TestDefinition(filename, MochaFingerprint, false, Array(new NestedSuiteSelector(title)))
         ).foreach { logger =>
@@ -116,7 +127,7 @@ private [mocha] class MochaTestReporting(mochaWorkDir: String, listeners: Seq[Te
     }
 
     // Only indent if there was a title
-    val nextIndent = suiteTitle.map(_ => indent + 2).getOrElse(indent)
+    val nextIndent = suiteTitle.fold(indent)(_ => indent + 2)
 
     def selector(name: String) = suiteTitle match {
       case Some(t) => new NestedTestSelector(t, name)
@@ -206,7 +217,7 @@ private [mocha] class MochaTestReporting(mochaWorkDir: String, listeners: Seq[Te
     // Handle end of suite
     suiteTitle.foreach { title =>
       listeners.foreach { listener =>
-        listener.endGroup(title, overallResult.result)
+        listener.endGroup(suiteFileTitle, overallResult.result)
       }
     }
 
