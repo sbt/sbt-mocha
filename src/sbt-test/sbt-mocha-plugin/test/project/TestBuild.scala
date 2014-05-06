@@ -86,6 +86,7 @@ object TestBuild extends Build {
       TestLogger.messages = Nil
       TestLogger.exceptions = Nil
       TestLogger.successes = Nil
+      MockListener.gotAnEvent = false
     },
 
     TaskKey[Unit]("no-errors") := {
@@ -98,8 +99,26 @@ object TestBuild extends Build {
       if (!TestLogger.exceptions.isEmpty) {
         throw new RuntimeException("Expected no exceptions, but got:\n" + TestLogger.exceptions.reverse.mkString("\n"))
       }
-    }
+    },
 
+    TaskKey[Unit]("mock-listener-invoked") := {
+      if (!MockListener.gotAnEvent) {
+        throw new RuntimeException("Mock test report listener was not invoked")
+      }
+    }
   )
+
+  object MockListener extends TestReportListener {
+
+    @volatile var gotAnEvent = false
+
+    def testEvent(event: TestEvent) = gotAnEvent = true
+
+    def startGroup(name: String) = ()
+
+    def endGroup(name: String, t: Throwable) = ()
+
+    def endGroup(name: String, result: TestResult.Value) = ()
+  }
 
 }
