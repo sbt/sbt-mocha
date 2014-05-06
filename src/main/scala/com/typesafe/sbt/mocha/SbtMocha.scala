@@ -162,7 +162,7 @@ object SbtMocha extends AutoPlugin {
       val results = SbtJsTask.executeJs(state.value, (engineType in mocha).value, (command in mocha).value, modules, (shellSource in mocha).value,
         Seq(jsOptions, JsArray(tests.map(t => JsString.apply(t.getCanonicalPath)).toList).toString()), 100.days)
 
-      val listeners = (testListeners in mocha).value
+      val listeners = (testListeners in (Test, mocha)).value
 
       results.headOption.map { jsResults =>
         new MochaTestReporting(workDir, listeners).logTestResults(jsResults)

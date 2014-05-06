@@ -59,6 +59,22 @@
 
 > reset-logs
 
+# Custom test listeners
+> set testListeners += TestBuild.MockListener
+> mocha-only HappyAssetSpec
+> mock-listener-invoked
+
+> set testListeners := testListeners.value.filterNot(_ == TestBuild.MockListener)
+> reset-logs
+
+# Activator configures testListeners in Test, so the below needs to work
+> set (testListeners in Test) += TestBuild.MockListener
+> mocha-only HappyAssetSpec
+> mock-listener-invoked
+
+> set testListeners := testListeners.value.filterNot(_ == TestBuild.MockListener)
+> reset-logs
+
 # Run all mocha tests
 -> mocha
 > logged error "Error: Total 6, Failed 1, Errors 1, Passed 4"
