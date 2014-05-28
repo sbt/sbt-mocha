@@ -7,7 +7,7 @@ Allows mocha to be used from within sbt.
 
 To use this plugin use the addSbtPlugin command within your project's plugins.sbt (or as a global setting) i.e.:
 
-    addSbtPlugin("com.typesafe.sbt" % "sbt-mocha" % "1.0.0-RC2")
+    addSbtPlugin("com.typesafe.sbt" % "sbt-mocha" % "1.0.0")
 
 Then declare the settings required in your build file:
 

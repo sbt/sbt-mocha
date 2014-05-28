@@ -4,7 +4,7 @@ organization := "com.typesafe.sbt"
 
 name := "sbt-mocha"
 
-version := "1.0.0-SNAPSHOT"
+version := "1.0.1-SNAPSHOT"
 
 scalaVersion := "2.10.4"
 
@@ -20,7 +20,7 @@ libraryDependencies ++= Seq(
   "org.webjars" % "mocha" % "1.17.1"
 )
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-js-engine" % "1.0.0-RC2")
+addSbtPlugin("com.typesafe.sbt" % "sbt-js-engine" % "1.0.0")
 
 publishMavenStyle := false
 
