@@ -9,42 +9,36 @@ var tests = JSON.parse(args[3]);
 
 function MyReporter(runner) {
 
-    var currentSuite;
+    var currentSuite = [];
 
     runner.on("suite", function(suite) {
         if (suite.root) {
-            currentSuite = {
+            currentSuite.unshift({
                 title: suite.title,
                 suites: [],
                 tests: []
-            };
+            });
         } else {
             var s = {
                 title: suite.title,
                 filename: suite.filename,
-                parent: currentSuite,
                 suites: [],
                 tests: []
             };
-            currentSuite.suites.push(s);
-            currentSuite = s;
+            currentSuite[0].suites.push(s);
+            currentSuite.unshift(s);
         }
 
     });
 
     runner.on("suite end", function(suite) {
         if (!suite.root) {
-            var parent = currentSuite.parent;
-            if (parent) {
-                // Remove the circular reference to parent
-                delete currentSuite.parent;
-                currentSuite = parent;
-            }
+            currentSuite.shift();
         }
     });
 
     runner.on("pass", function(test) {
-        currentSuite.tests.push({
+        currentSuite[0].tests.push({
             title: test.title,
             status: "pass",
             duration: test.duration
@@ -55,7 +49,7 @@ function MyReporter(runner) {
 
         // This seems to be a convention in testing in node
         if (err.name == "AssertionError") {
-            currentSuite.tests.push({
+            currentSuite[0].tests.push({
                 title: test.title,
                 status: "fail",
                 duration: test.duration,
@@ -67,7 +61,7 @@ function MyReporter(runner) {
                 }
             })
         } else {
-            currentSuite.tests.push({
+            currentSuite[0].tests.push({
                 title: test.title,
                 status: "error",
                 duration: test.duration,
@@ -81,7 +75,7 @@ function MyReporter(runner) {
     });
 
     runner.on("pending", function(test) {
-        currentSuite.tests.push({
+        currentSuite[0].tests.push({
             title: test.title,
             status: "pending",
             duration: test.duration
@@ -89,13 +83,13 @@ function MyReporter(runner) {
     });
 
     runner.on("end", function() {
-        if (currentSuite == null) {
-            currentSuite = {
+        if (!currentSuite.length) {
+            currentSuite.push({
                 suites: [],
                 tests: []
-            }
+            });
         }
-        console.log("\u0010", JSON.stringify(currentSuite));
+        console.log("\u0010", JSON.stringify(currentSuite[0]));
         process.exit(0);
     });
 }
