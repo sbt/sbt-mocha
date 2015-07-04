@@ -56,7 +56,7 @@ function MyReporter(runner) {
                 error: {
                     name: err.name,
                     message: (err.message ? err.message + ": " : "") +
-                        "Got value " + err.actual + " but expected a value " + err.operator + " " + err.expected,
+                        "Got value " + JSON.stringify(err.actual) + " but expected a value " + err.operator + " " + JSON.stringify(err.expected),
                     stack: err.stack
                 }
             })
