@@ -4,13 +4,13 @@ organization := "com.typesafe.sbt"
 name := "sbt-mocha"
 description := "sbt mocha support"
 
-scalaVersion := "2.10.4"
+scalaVersion := "2.10.5"
 sbtPlugin := true
 
 libraryDependencies ++= Seq(
   "org.webjars" % "mocha" % "1.17.1"
 )
-addSbtPlugin("com.typesafe.sbt" % "sbt-js-engine" % "1.1.1")
+addSbtPlugin("com.typesafe.sbt" % "sbt-js-engine" % "1.1.3")
 
 scriptedSettings
 scriptedLaunchOpts <+= version apply { v => s"-Dproject.version=$v" }
