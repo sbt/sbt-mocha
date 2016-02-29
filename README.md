@@ -3,7 +3,7 @@ sbt-mocha
 
 [![Build Status](https://api.travis-ci.org/sbt/sbt-mocha.png?branch=master)](https://travis-ci.org/sbt/sbt-mocha)
 
-Allows mocha to be used from within sbt.
+Allows mocha to be used from within sbt via the use of [sbt-web](https://github.com/sbt/sbt-web). You can therefore run your JS tests using SBT conventions either in-JVM (eg Tririme), or out (Node).
 
 To use this plugin use the addSbtPlugin command within your project's plugins.sbt (or as a global setting) i.e.:
 
