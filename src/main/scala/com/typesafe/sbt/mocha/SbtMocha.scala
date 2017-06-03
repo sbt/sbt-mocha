@@ -80,8 +80,9 @@ object SbtMocha extends AutoPlugin {
     mochaExecuteTests := mochaTestTask.value(mochaTests.value.map(_._1)),
 
     // This ensures that mocha tests get executed when test is run
-    (executeTests in Test) <<= (executeTests in Test, mochaExecuteTests).map { (output, mochaResult) =>
-      val (result, suiteResults) = mochaResult
+    (executeTests in Test) := {
+      val output = (executeTests in Test).value
+      val (result, suiteResults) = mochaExecuteTests.value
       import TestResult._
 
       // Merge the mocha result with the overall result of the rest of the tests
@@ -152,15 +153,15 @@ object SbtMocha extends AutoPlugin {
       val jsOptions = JsObject(Map(
         "requires" -> JsArray(options.requires.map { r =>
           JsString(new File(workDir, r).getCanonicalPath)
-        }.toList),
-        "globals" -> JsArray(options.globals.map(JsString.apply).toList),
+        }: _*),
+        "globals" -> JsArray(options.globals.map(JsString.apply): _*),
         "checkLeaks" -> JsBoolean(options.checkLeaks),
         "bail" -> JsBoolean(options.bail)
       )).toString()
 
       import scala.concurrent.duration._
       val results = SbtJsTask.executeJs(state.value, (engineType in mocha).value, (command in mocha).value, modules, (shellSource in mocha).value,
-        Seq(jsOptions, JsArray(tests.map(t => JsString.apply(t.getCanonicalPath)).toList).toString()), 100.days)
+        Seq(jsOptions, JsArray(tests.map(t => JsString.apply(t.getCanonicalPath)): _*).toString()), 100.days)
 
       val listeners = (testListeners in (Test, mocha)).value
 

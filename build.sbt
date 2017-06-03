@@ -13,7 +13,7 @@ libraryDependencies ++= Seq(
 addSbtPlugin("com.typesafe.sbt" % "sbt-js-engine" % "1.2.0")
 
 scriptedSettings
-scriptedLaunchOpts <+= version apply { v => s"-Dproject.version=$v" }
+scriptedLaunchOpts += s"-Dproject.version=${version.value}"
 scriptedLaunchOpts += "-XX:MaxPermSize=256m"
 
 // Publish settings
