@@ -52,7 +52,12 @@ object SbtMocha extends AutoPlugin {
 
   val testResultLogger = TestResultLogger.Default.copy(printNoTests = TestResultLogger.const(_ info "No mocha tests found"))
 
-  override def projectSettings = inTask(mocha)(SbtJsTask.jsTaskSpecificUnscopedSettings) ++ Seq(
+  override def buildSettings = inTask(mocha)(SbtJsTask.jsTaskSpecificUnscopedBuildSettings ++ Seq(
+    moduleName := "mocha",
+    shellFile := getClass.getResource("mocha.js")
+  ))
+
+  override def projectSettings = inTask(mocha)(SbtJsTask.jsTaskSpecificUnscopedProjectSettings) ++ Seq(
     MochaKeys.requires := Nil,
     globals := Nil,
     checkLeaks := false,
@@ -61,8 +66,6 @@ object SbtMocha extends AutoPlugin {
     mochaOptions := {
       MochaOptions(MochaKeys.requires.value, globals.value, checkLeaks.value, bail.value)
     },
-
-    shellFile in mocha := getClass.getResource("mocha.js"),
 
     // Find the test files to run.  These need to be in the test assets target directory, however we only want to
     // find tests that originally came from the test sources directories (both managed and unmanaged).
@@ -80,7 +83,9 @@ object SbtMocha extends AutoPlugin {
     mochaExecuteTests := mochaTestTask.value(mochaTests.value.map(_._1)),
 
     // This ensures that mocha tests get executed when test is run
-    (executeTests in Test) <<= (executeTests in Test, mochaExecuteTests).map { (output, mochaResult) =>
+    (executeTests in Test) := {
+      val output = (executeTests in Test).value
+      val mochaResult = mochaExecuteTests.value
       val (result, suiteResults) = mochaResult
       import TestResult._
 
@@ -152,15 +157,15 @@ object SbtMocha extends AutoPlugin {
       val jsOptions = JsObject(Map(
         "requires" -> JsArray(options.requires.map { r =>
           JsString(new File(workDir, r).getCanonicalPath)
-        }.toList),
-        "globals" -> JsArray(options.globals.map(JsString.apply).toList),
+        }.toVector),
+        "globals" -> JsArray(options.globals.map(JsString.apply).toVector),
         "checkLeaks" -> JsBoolean(options.checkLeaks),
         "bail" -> JsBoolean(options.bail)
       )).toString()
 
       import scala.concurrent.duration._
       val results = SbtJsTask.executeJs(state.value, (engineType in mocha).value, (command in mocha).value, modules, (shellSource in mocha).value,
-        Seq(jsOptions, JsArray(tests.map(t => JsString.apply(t.getCanonicalPath)).toList).toString()), 100.days)
+        Seq(jsOptions, JsArray(tests.map(t => JsString.apply(t.getCanonicalPath)).toVector).toString()), 100.days)
 
       val listeners = (testListeners in (Test, mocha)).value
 
