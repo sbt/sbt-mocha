@@ -90,7 +90,6 @@ function MyReporter(runner) {
             });
         }
         console.log("\u0010", JSON.stringify(currentSuite[0]));
-        process.exit(0);
     });
 }
 
@@ -125,6 +124,4 @@ if (options.checkLeaks) {
 }
 
 mocha.files = tests;
-mocha.run(function(code) {
-    process.exit(code);
-});
+mocha.run();
