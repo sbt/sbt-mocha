@@ -1,13 +1,13 @@
 sbt-mocha
 =========
 
-[![Build Status](https://api.travis-ci.org/sbt/sbt-mocha.png?branch=master)](https://travis-ci.org/sbt/sbt-mocha)
+[![Build Status](https://api.travis-ci.org/sbt/sbt-mocha.png?branch=master)](https://travis-ci.org/sbt/sbt-mocha) [![Download](https://api.bintray.com/packages/sbt-web/sbt-plugin-releases/sbt-mocha/images/download.svg)](https://bintray.com/sbt-web/sbt-plugin-releases/sbt-mocha/_latestVersion)
 
 Allows mocha to be used from within sbt.
 
 To use this plugin use the addSbtPlugin command within your project's plugins.sbt (or as a global setting) i.e.:
 
-    addSbtPlugin("com.typesafe.sbt" % "sbt-mocha" % "1.1.1")
+    addSbtPlugin("com.typesafe.sbt" % "sbt-mocha" % "1.1.2")
 
 Then declare the settings required in your build file:
 
