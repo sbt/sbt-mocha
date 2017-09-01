@@ -1,43 +1,41 @@
-> reset-logs
+> resetLogs
 
 # A happy test
-> mocha-only HappyAssetSpec
+> mochaOnly HappyAssetSpec
 > logged info "a test asset"
 > logged info "+ should be happy"
 > logged info "+ should be able to require a main asset"
 > logged info "+ should be able to require a main resource"
 > logged info "Passed: Total 3, Failed 0, Errors 0, Passed 3"
-> logged debug "Passed tests:"
-> logged debug "HappyAssetSpec.js"
-> no-errors
+> noErrors
 
-> reset-logs
+> resetLogs
 
 # Make sure specs don't get picked up from the src/test/public directory
-> mocha-only HappyPublicSpec
+> mochaOnly HappyPublicSpec
 > logged info "Passed: Total 0, Failed 0, Errors 0, Passed 0"
-> no-errors
+> noErrors
 
-> reset-logs
+> resetLogs
 
 # Make sure specs don't get picked up from the src/main/assets directory
-> mocha-only MainAsset
+> mochaOnly MainAsset
 > logged info "Passed: Total 0, Failed 0, Errors 0, Passed 0"
-> no-errors
+> noErrors
 
-> reset-logs
+> resetLogs
 
 # A test that depends on requires being required
-> mocha-only SetupSpec
+> mochaOnly SetupSpec
 > logged info "setup"
 > logged info "+ should have been required"
 > logged info "Passed: Total 1, Failed 0, Errors 0, Passed 1"
-> no-errors
+> noErrors
 
-> reset-logs
+> resetLogs
 
 # A failing test
--> mocha-only FailingSpec
+-> mochaOnly FailingSpec
 > logged info "a spec"
 > logged info "x should be able to fail with an assertion error"
 # The following log message varies slightly between node and rhino
@@ -46,10 +44,10 @@
 > logged error "Failed tests:"
 > logged error "FailingSpec.js"
 
-> reset-logs
+> resetLogs
 
 # An error test
--> mocha-only ErrorSpec
+-> mochaOnly ErrorSpec
 > logged info "a spec"
 > logged info "! should be able to fail with a generic error"
 > logged error "Error: not happy"
@@ -57,23 +55,23 @@
 > logged error "Error during tests:"
 > logged error "ErrorSpec.js"
 
-> reset-logs
+> resetLogs
 
 # Custom test listeners
-> set testListeners += TestBuild.MockListener
-> mocha-only HappyAssetSpec
-> mock-listener-invoked
+> set testListeners += MockListener
+> mochaOnly HappyAssetSpec
+> mockListenerInvoked
 
-> set testListeners := testListeners.value.filterNot(_ == TestBuild.MockListener)
-> reset-logs
+> set testListeners := testListeners.value.filterNot(_ == MockListener)
+> resetLogs
 
 # Activator configures testListeners in Test, so the below needs to work
-> set (testListeners in Test) += TestBuild.MockListener
-> mocha-only HappyAssetSpec
-> mock-listener-invoked
+> set (testListeners in Test) += MockListener
+> mochaOnly HappyAssetSpec
+> mockListenerInvoked
 
-> set testListeners := testListeners.value.filterNot(_ == TestBuild.MockListener)
-> reset-logs
+> set testListeners := testListeners.value.filterNot(_ == MockListener)
+> resetLogs
 
 # Run all mocha tests
 -> mocha
