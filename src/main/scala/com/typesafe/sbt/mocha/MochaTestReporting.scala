@@ -4,6 +4,8 @@ import spray.json._
 import sbt._
 import sbt.testing._
 
+import Compat._
+
 /**
  * Handles reporting test results
  */
@@ -20,7 +22,7 @@ private [mocha] class MochaTestReporting(mochaWorkDir: File, listeners: Seq[Test
 
   private def overallResultFromSuiteResults(suiteResults: Iterable[SuiteResult]) = {
     import sbt.TestResult._
-    suiteResults.foldLeft(Passed) { (a, b) =>
+    suiteResults.foldLeft(Passed.asInstanceOf[TestResult]) { (a, b) =>
       (a, b.result) match {
         case (Error, _) | (_, Error) => Error
         case (Failed, _) | (_, Failed) => Failed
@@ -47,7 +49,7 @@ private [mocha] class MochaTestReporting(mochaWorkDir: File, listeners: Seq[Test
     )
   }
 
-  def logTestResults(results: JsValue): (TestResult.Value, Map[String, SuiteResult]) = {
+  def logTestResults(results: JsValue): (TestResult, Map[String, SuiteResult]) = {
     import MochaJsonProtocol._
 
     val suite = results.convertTo[MochaSuite]

@@ -6,6 +6,8 @@ import com.typesafe.sbt.web.{SbtWeb, PathMapping}
 import spray.json._
 import com.typesafe.sbt.jse.{SbtJsEngine, SbtJsTask}
 
+import Compat._
+
 object Import {
   object MochaKeys {
     import KeyRanks._
@@ -13,7 +15,7 @@ object Import {
     val mocha = TaskKey[Unit]("mocha", "Run all mocha tests.", BTask)
     val mochaOnly = InputKey[Unit]("mocha-only", "Execute the mocha tests provided as arguments or all tests if no arguments are provided.", ATask)
 
-    val mochaExecuteTests = TaskKey[(TestResult.Value, Map[String, SuiteResult])]("mocha-execute-tests", "Execute all mocha tests and return the result.", CTask)
+    val mochaExecuteTests = TaskKey[(TestResult, Map[String, SuiteResult])]("mocha-execute-tests", "Execute all mocha tests and return the result.", CTask)
     val mochaTests = TaskKey[Seq[PathMapping]]("mocha-tests", "The tests that will be executed by mocha.", CTask)
 
     val requires = SettingKey[Seq[String]]("mocha-requires", "Any scripts that should be required before running the tests", ASetting)
@@ -74,7 +76,7 @@ object SbtMocha extends AutoPlugin {
       val testFilter: FileFilter = (jsFilter in TestAssets).value
       val testSources: Seq[File] = (sources in TestAssets).value ++ (managedResources in TestAssets).value
       val testDirectories: Seq[File] = (sourceDirectories in TestAssets).value ++ (managedResourceDirectories in TestAssets).value
-      (testSources ** testFilter).pair(relativeTo(testDirectories)).map {
+      (testSources ** testFilter).pair(Path.relativeTo(testDirectories)).map {
         case (_, path) => workDir / path -> path
       }
     },
@@ -136,9 +138,8 @@ object SbtMocha extends AutoPlugin {
    * mocha-only, since they come from the command line input of that particular run, a function is the most convenient
    * way to do this.
    */
-  private val mochaTestTask: Def.Initialize[Task[Seq[File] => (TestResult.Value, Map[String, SuiteResult])]] = Def.task {
-    { (tests: Seq[File]) =>
-
+  private val mochaTestTask: Def.Initialize[Task[Seq[File] => (TestResult, Map[String, SuiteResult])]] = Def.task {
+    {
       val workDir: File = (assets in TestAssets).value
 
       // One way of declaring dependencies
@@ -153,7 +154,7 @@ object SbtMocha extends AutoPlugin {
         ).map(_.getCanonicalPath)
 
       val options = mochaOptions.value
-    
+
       val jsOptions = JsObject(Map(
         "requires" -> JsArray(options.requires.map { r =>
           JsString(new File(workDir, r).getCanonicalPath)
@@ -163,15 +164,22 @@ object SbtMocha extends AutoPlugin {
         "bail" -> JsBoolean(options.bail)
       )).toString()
 
-      import scala.concurrent.duration._
-      val results = SbtJsTask.executeJs(state.value, (engineType in mocha).value, (command in mocha).value, modules, (shellSource in mocha).value,
-        Seq(jsOptions, JsArray(tests.map(t => JsString.apply(t.getCanonicalPath)).toVector).toString()), 100.days)
+      val stateValue = state.value
+      val engineTypeValue = (engineType in mocha).value
+      val commandValue = (command in mocha).value
+      val shellSourceValue = (shellSource in mocha).value
 
-      val listeners = (testListeners in (Test, mocha)).value
+      val listeners = (testListeners in(Test, mocha)).value
 
-      results.headOption.map { jsResults =>
-        new MochaTestReporting(workDir, listeners).logTestResults(jsResults)
-      }.getOrElse((TestResult.Failed, Map.empty))
+      { (tests: Seq[File]) =>
+        import scala.concurrent.duration._
+        val results = SbtJsTask.executeJs(stateValue, engineTypeValue, commandValue, modules, shellSourceValue,
+          Seq(jsOptions, JsArray(tests.map(t => JsString.apply(t.getCanonicalPath)).toVector).toString()), 100.days)
+
+        results.headOption.map { jsResults =>
+          new MochaTestReporting(workDir, listeners).logTestResults(jsResults)
+        }.getOrElse((TestResult.Failed, Map.empty))
+      }
     }
   }
 }
