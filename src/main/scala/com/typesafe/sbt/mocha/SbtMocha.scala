@@ -57,7 +57,7 @@ object SbtMocha extends AutoPlugin {
     shellFile := getClass.getResource("mocha.js")
   ))
 
-  override def projectSettings = inTask(mocha)(SbtJsTask.jsTaskSpecificUnscopedProjectSettings) ++ Seq(
+  override def projectSettings = inConfig(Test)(Defaults.defaultTestTasks(mocha)) ++ inConfig(Test)(Defaults.defaultTestTasks(mochaOnly)) ++ inTask(mocha)(SbtJsTask.jsTaskSpecificUnscopedProjectSettings) ++ Seq(
     MochaKeys.requires := Nil,
     globals := Nil,
     checkLeaks := false,
@@ -98,13 +98,15 @@ object SbtMocha extends AutoPlugin {
       Tests.Output(overallResult, output.events ++ suiteResults, output.summaries)
     },
 
+    // Defaults.defaultTestTasks(...) above sets logBuffered to true, but we don't want that for these tasks
+    Test / mocha / logBuffered := false,
+    Test / mochaOnly / logBuffered := false,
+
     // For running mocha tests in isolation from other types of tests
     mocha := {
       val (result, events) = mochaExecuteTests.value
       testResultLogger.run(streams.value.log, Tests.Output(result, events, Nil), "")
     },
-
-    mocha / tags := Seq(Tags.Test -> 1),
   
     // For running only a specified set of tests
     mochaOnly := {
@@ -126,7 +128,7 @@ object SbtMocha extends AutoPlugin {
       val (result, events) = mochaTestTask.value(tests)
       testResultLogger.run(streams.value.log, Tests.Output(result, events, Nil), "")
     }
-  ) ++ Defaults.testTaskOptions(mocha)
+  ) ++ inConfig(Test)(Defaults.testTaskOptions(mocha)) ++ inConfig(Test)(Defaults.testTaskOptions(mochaOnly))
 
   /**
    * This is a task that produces a function that will take the test files to run, and then run it.
