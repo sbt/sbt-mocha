@@ -1,5 +1,4 @@
 import sbt._
-import com.typesafe.sbt.mocha.Compat._
 
 object MockListener extends TestReportListener {
 
