@@ -4,8 +4,6 @@ import spray.json._
 import sbt._
 import sbt.testing._
 
-import Compat._
-
 /**
  * Handles reporting test results
  */

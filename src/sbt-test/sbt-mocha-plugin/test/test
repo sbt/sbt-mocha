@@ -65,8 +65,8 @@
 > set testListeners := testListeners.value.filterNot(_ == MockListener)
 > resetLogs
 
-# Activator configures testListeners in Test, so the below needs to work
-> set (testListeners in Test) += MockListener
+# sbt configures testListeners in Test, so the below needs to work
+> set (Test / testListeners) += MockListener
 > mochaOnly HappyAssetSpec
 > mockListenerInvoked
 

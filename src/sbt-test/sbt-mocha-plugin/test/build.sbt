@@ -1,11 +1,11 @@
 enablePlugins(SbtWeb)
 
-Keys.libraryDependencies += "org.specs2" %% "specs2" % "2.3.11" % "test"
+Keys.libraryDependencies += "org.specs2" %% "specs2-core" % "4.20.4" % "test"
 
 MochaKeys.requires += "Setup"
-scalaVersion := "2.10.6"
+scalaVersion := "2.13.12"
 
-Keys.extraLoggers := { scope =>
+Global / Keys.extraLoggers := { scope =>
   // Configure extra loggers just for the mocha and test tasks
   if (scope.scope.task.fold({ tsk =>
     Seq(

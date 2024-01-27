@@ -1,13 +1,13 @@
 sbt-mocha
 =========
 
-[![Build Status](https://api.travis-ci.org/sbt/sbt-mocha.png?branch=master)](https://travis-ci.org/sbt/sbt-mocha) [![Download](https://api.bintray.com/packages/sbt-web/sbt-plugin-releases/sbt-mocha/images/download.svg)](https://bintray.com/sbt-web/sbt-plugin-releases/sbt-mocha/_latestVersion)
+[![Build Status](https://github.com/sbt/sbt-mocha/actions/workflows/build-test.yml/badge.svg)](https://github.com/sbt/sbt-mocha/actions/workflows/build-test.yml)
 
 Allows mocha to be used from within sbt via the use of [sbt-web](https://github.com/sbt/sbt-web). You can therefore run your JS tests using SBT conventions either in-JVM (eg Trireme), or on (Node).
 
 To use this plugin use the addSbtPlugin command within your project's plugins.sbt (or as a global setting) i.e.:
 
-    addSbtPlugin("com.typesafe.sbt" % "sbt-mocha" % "1.1.2")
+    addSbtPlugin("com.github.sbt" % "sbt-mocha" % "2.0.0")
 
 Then declare the settings required in your build file:
 
@@ -16,7 +16,7 @@ Then declare the settings required in your build file:
 By default, any tests matching either `*Test.js` or `*Spec.js` are tested.  This can be overridden by defining a different includes, for example:
 
 ```scala
-WebKeys.jsFilter in TestAssets := GlobFilter("Test*.js")
+TestAssets / WebKeys.jsFilter := GlobFilter("Test*.js")
 ```
 
 Tests are read from `src/test/assets` and `src/test/public`.  For example, you can create `src/test/assets/FooSpec`:
@@ -41,5 +41,3 @@ The following options are supported:
 * `MochaKeys.globals` - A list of variables that Mocha should make global.
 * `MochaKeys.checkLeaks` - Set to true to run mocha in check leaks mode.
 * `MochaKeys.bail` - Set to true to tell mocha to bail after the first run.
-
-&copy; Typesafe Inc., 2013, 2014
