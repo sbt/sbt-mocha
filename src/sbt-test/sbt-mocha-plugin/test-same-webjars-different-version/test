@@ -81,4 +81,5 @@
 -> test
 > logged error "Error: Total 9, Failed 1, Errors 1, Passed 7"
 
-$ exists project/target/node-modules/webjars/mocha/index.js
+$ exists project/target/node-modules/webjars/mocha/1.17.1
+$ exists project/target/node-modules/webjars/mocha/3.0.0-2
