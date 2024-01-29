@@ -11,8 +11,8 @@ addSbtPlugin("com.github.sbt" % "sbt-mocha" % sys.props("project.version"))
 // and no subfolder will be forced for that case but the newest version will be choosen. Like normal dependency resolution.
 libraryDependencies ++= Seq(
   // Pulling in the classic and the npm webjar to subfolders for this webjar will be created
-  ("org.webjars.npm" % "mocha" % "3.0.0-2")
-    .exclude("org.webjars.npm", "debug")
-    .exclude("org.webjars.npm", "diff"),
-  "org.webjars" % "mocha" % "1.17.1",
+  "org.webjars.npm" % "mocha" % "3.0.0-2",
+  ("org.webjars" % "mocha" % "1.17.1")
+    .exclude("org.webjars", "debug")
+    .exclude("org.webjars", "diff"),
 )
