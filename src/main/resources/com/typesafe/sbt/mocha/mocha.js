@@ -1,6 +1,6 @@
 var requireIfExists = require('node-require-fallback');
 
-var Mocha = requireIfExists("mocha/1.17.1", "mocha"); // sync with build.sbt
+var Mocha = requireIfExists("mocha/10.2.0", "mocha"); // sync with build.sbt
 
 var mocha = new Mocha();
 
