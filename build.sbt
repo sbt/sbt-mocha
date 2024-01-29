@@ -15,7 +15,10 @@ developers += Developer(
 
 addSbtJsEngine("1.3.5")
 
-libraryDependencies += "org.webjars" % "mocha" % "1.17.1"
+libraryDependencies ++= Seq(
+  "org.webjars.npm" % "node-require-fallback" % "1.0.0",
+  "org.webjars" % "mocha" % "1.17.1", // sync with src/main/resources/com/typesafe/sbt/mocha/mocha.js
+)
 
 // Customise sbt-dynver's behaviour to make it work with tags which aren't v-prefixed
 ThisBuild / dynverVTagPrefix := false
