@@ -18,7 +18,7 @@ addSbtJsEngine("1.3.9")
 libraryDependencies ++= Seq(
   "org.webjars.npm" % "node-require-fallback" % "1.0.0",
   "org.webjars.npm" % "mocha" % "10.2.0", // sync with src/main/resources/com/typesafe/sbt/mocha/mocha.js
-  "org.webjars.npm" % "minimatch" % "9.0.3",
+  "org.webjars.npm" % "minimatch" % "9.0.5",
 )
 
 // Customise sbt-dynver's behaviour to make it work with tags which aren't v-prefixed
