@@ -8,4 +8,11 @@ describe("a test asset", function() {
     it("should be able to require a main resource", function() {
         require("./HappyPublic").foo();
     });
+    describe("outer", function() {
+        describe("inner", function() {
+            it("should do a thing", function() {
+                expect(1).to.equal(1);
+            });
+        });
+    });
 });
