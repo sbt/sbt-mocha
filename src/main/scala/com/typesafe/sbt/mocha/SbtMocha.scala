@@ -55,6 +55,14 @@ object SbtMocha extends AutoPlugin {
 
   val testResultLogger = TestResultLogger.Default.copy(printNoTests = TestResultLogger.const(_.info("No mocha tests found")))
 
+  private def reportResults(log: Logger, results: Tests.Output, taskName: String): Unit = {
+    testResultLogger.run(log, results, taskName)
+    // sbt 2.1's result logger only logs; the task must propagate test failures.
+    if (results.overall == TestResult.Failed || results.overall == TestResult.Error) {
+      sys.error("Mocha tests failed")
+    }
+  }
+
   override def buildSettings = Project.inTask(mocha)(SbtJsTask.jsTaskSpecificUnscopedBuildSettings ++ Seq(
     moduleName := "mocha",
     shellFile := getClass.getResource("mocha.js")
@@ -91,7 +99,7 @@ object SbtMocha extends AutoPlugin {
         case _ => Passed
       }
       val combinedResults = output(overallResult, results.events ++ suiteResults, results.summaries)
-      testResultLogger.run(streams.value.log, combinedResults, "test")
+      reportResults(streams.value.log, combinedResults, "test")
       combinedResults.overall
     }).value
   )) ++ Project.inTask(mocha)(SbtJsTask.jsTaskSpecificUnscopedProjectSettings) ++ Seq(
@@ -124,7 +132,7 @@ object SbtMocha extends AutoPlugin {
     // For running mocha tests in isolation from other types of tests
     mocha := uncached(Def.task {
       val (result, events) = mochaExecuteTests.value
-      testResultLogger.run(streams.value.log, output(result, events, Nil), "")
+      reportResults(streams.value.log, output(result, events, Nil), "")
     }).value,
   
     // For running only a specified set of tests
@@ -146,7 +154,7 @@ object SbtMocha extends AutoPlugin {
       implicit val fc: FileConverter = fileConverter.value
       // Run them
       val (result, events) = mochaTestTask.value(tests.map(toFile))
-      testResultLogger.run(streams.value.log, output(result, events, Nil), "")
+      reportResults(streams.value.log, output(result, events, Nil), "")
     }
   ) ++ inConfig(Test)(Defaults.testTaskOptions(mocha)) ++ inConfig(Test)(Defaults.testTaskOptions(mochaOnly))
 

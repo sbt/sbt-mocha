@@ -25,8 +25,22 @@ InputKey[Unit]("logged") := {
   val level = Level.withName(args.head)
   val msg = args.tail.head
 
+  // sbt 2.1 summaries count suites rather than individual examples.
+  val suiteSummaries = Map(
+    "Passed: Total 3, Failed 0, Errors 0, Passed 3" -> "passed: total 1, failed 0, errors 0, passed 1, cached 0",
+    "Passed: Total 0, Failed 0, Errors 0, Passed 0" -> "passed: total 0, failed 0, errors 0, passed 0, cached 0",
+    "Passed: Total 1, Failed 0, Errors 0, Passed 1" -> "passed: total 1, failed 0, errors 0, passed 1, cached 0",
+    "Failed: Total 1, Failed 1, Errors 0, Passed 0" -> "failed: total 1, failed 1, errors 0, passed 0, cached 0",
+    "Error: Total 1, Failed 0, Errors 1, Passed 0" -> "error: total 1, failed 0, errors 1, passed 0, cached 0",
+    "Error: Total 6, Failed 1, Errors 1, Passed 4" -> "error: total 4, failed 1, errors 1, passed 2, cached 0",
+    "Error: Total 9, Failed 1, Errors 1, Passed 7" -> "error: total 5, failed 1, errors 1, passed 3, cached 0",
+    "Failed tests:" -> "failed tests:",
+    "Error during tests:" -> "error during tests:"
+  )
+  val expected = if (sbtVersion.value.startsWith("2.")) suiteSummaries.getOrElse(msg, msg) else msg
+
   val msgs = TestAppender.messages.collect {
-    case (l, m) if m.trim == msg => l
+    case (l, m) if m.trim == expected => l
   }
 
   if (msgs.contains(level)) {
@@ -60,4 +74,8 @@ TaskKey[Unit]("mockListenerInvoked") := {
   if (!MockListener.gotAnEvent) {
     throw new RuntimeException("Mock test report listener was not invoked")
   }
+}
+
+ThisBuild / scalaVersion := {
+  if (sbtVersion.value.startsWith("1.")) "2.12.21" else "3.9.0"
 }
